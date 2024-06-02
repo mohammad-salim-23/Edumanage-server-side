@@ -63,6 +63,24 @@ async function run() {
       const result = userCollection.insertOne(user);
       res.send(result);
     })
+    app.get('/users/admin/:email',verifyToken,async(req,res)=>{
+      console.log("email....",email);
+      console.log("decoded email...",req.decoded.email);
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if(user){
+        admin = user?.role==='admin'
+      }
+      res.send({admin});
+    })
+    app.get('/users',verifyToken,async(req,res)=>{
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    })
     app.patch('/users/admin/:id',verifyToken,async(req,res)=>{
       const id = req.params.id;
       const filter={_id:new ObjectId(id)};
