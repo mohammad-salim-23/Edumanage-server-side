@@ -24,6 +24,7 @@ async function run() {
     await client.connect();
     const userCollection = client.db("EduManage").collection("users");
     const teacherCollection = client.db("EduManage").collection("teachers");
+    const classCollection = client.db("EduManage").collection("class");
   //  created middleware
   const verifyToken = (req,res,next)=>{
     console.log("inside verify Token",req.headers);
@@ -74,7 +75,17 @@ async function run() {
       const result = userCollection.insertOne(user);
       res.send(result);
     })
+    app.get('/users/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    })
     app.get('/users/admin/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
       console.log("email....",email);
       console.log("decoded email...",req.decoded.email);
       if(email!==req.decoded?.email){
@@ -87,6 +98,21 @@ async function run() {
         admin = user?.role==='admin'
       }
       res.send({admin});
+    })
+    app.get('/users/teacher/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      console.log("email....",email);
+      console.log("decoded email...",req.decoded.email);
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const user = await userCollection.findOne(query);
+      let teacher= false;
+      if(user){
+        teacher = user?.role==='teacher'
+      }
+      res.send({teacher});
     })
     app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
       const result = await userCollection.find().toArray();
@@ -103,6 +129,36 @@ async function run() {
       const result = await userCollection.updateOne(filter,updateDoc);
       res.send(result);
     })
+
+    app.patch('/users/teacher/:email',verifyToken,async(req,res)=>{
+      const id = req.params.id;
+      const email = req.params.email;
+      const query = {email:email};
+      const userFilter={email:email};
+      const teacherFilter={email:email};
+      const userUpdateDoc = {
+        $set:{
+          role:'teacher'
+        }
+      };
+      const teacherUpdateDoc = {
+        $set: {
+          status: 'accepted'
+        }
+      };
+      const userUpdateResult = await userCollection.updateOne(userFilter, userUpdateDoc);
+
+     
+      const teacherUpdateResult = await teacherCollection.updateOne(teacherFilter, teacherUpdateDoc);
+  
+      res.send({userUpdateResult,teacherUpdateResult});
+    })
+    app.delete('/teachers/:id',verifyToken,verifyAdmin,async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id:new ObjectId(id)};
+      const result = await teacherCollection.deleteOne(query);
+      res.send(result);
+    })
     app.delete('/users/:id',verifyToken,verifyAdmin,async(req,res)=>{
       const id = req.params.id;
       const query = {_id:new ObjectId(id)};
@@ -112,13 +168,21 @@ async function run() {
 
     // teacher related api
     app.post('/reqTeacher',verifyToken,async(req,res)=>{
-      const id = req.body;
-      const result = await teacherCollection.insertOne(item);
+      const teacher = req.body;
+      const email = req.params.email;
+    
+      const result = await teacherCollection.insertOne(teacher);
       res.send(result);
     })
     app.get('/teachers',verifyToken,async(req,res)=>{
        const result = await teacherCollection.find().toArray();
        res.send(result);
+    })
+    // class related api
+    app.post('/classes',verifyToken,async(req,res)=>{
+      const newClass = req.body;
+      const result = await classCollection.find().toArray();
+      res.send(result);
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
