@@ -23,6 +23,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const userCollection = client.db("EduManage").collection("users");
+    const teacherCollection = client.db("EduManage").collection("teachers");
   //  created middleware
   const verifyToken = (req,res,next)=>{
     console.log("inside verify Token",req.headers);
@@ -107,6 +108,17 @@ async function run() {
       const query = {_id:new ObjectId(id)};
       const result = await userCollection.deleteOne(query);
       res.send(result);
+    })
+
+    // teacher related api
+    app.post('/reqTeacher',verifyToken,async(req,res)=>{
+      const id = req.body;
+      const result = await teacherCollection.insertOne(item);
+      res.send(result);
+    })
+    app.get('/teachers',verifyToken,async(req,res)=>{
+       const result = await teacherCollection.find().toArray();
+       res.send(result);
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
