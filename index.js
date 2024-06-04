@@ -84,41 +84,7 @@ async function run() {
       const result = await userCollection.findOne(query);
       res.send(result);
     })
-    app.get('/users/admin/:email',verifyToken,async(req,res)=>{
-      const email = req.params.email;
-      console.log("email....",email);
-      console.log("decoded email...",req.decoded.email);
-      if(email!==req.decoded?.email){
-        return res.status(403).send({message:'forbidden access one'});
-      }
-      const query = {email:email};
-      const user = await userCollection.findOne(query);
-      let admin = false;
-      if(user){
-        admin = user?.role==='admin'
-      }
-      res.send({admin});
-    })
-    app.get('/users/teacher/:email',verifyToken,async(req,res)=>{
-      const email = req.params.email;
-      console.log("email....",email);
-      console.log("decoded email...",req.decoded.email);
-      if(email!==req.decoded?.email){
-        return res.status(403).send({message:'forbidden access one'});
-      }
-      const query = {email:email};
-      const user = await userCollection.findOne(query);
-      let teacher= false;
-      if(user){
-        teacher = user?.role==='teacher'
-      }
-      res.send({teacher});
-    })
-    app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
-      const result = await userCollection.find().toArray();
-      res.send(result);
-    })
-    app.patch('/users/admin/:id',verifyToken,async(req,res)=>{
+     app.patch('/users/admin/:id',verifyToken,async(req,res)=>{
       const id = req.params.id;
       const filter={_id:new ObjectId(id)};
       const updateDoc = {
@@ -153,6 +119,41 @@ async function run() {
   
       res.send({userUpdateResult,teacherUpdateResult});
     })
+    app.get('/users/admin/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      console.log("email....",email);
+      console.log("decoded email...",req.decoded.email);
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if(user){
+        admin = user?.role==='admin'
+      }
+      res.send({admin});
+    })
+    app.get('/users/teacher/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      console.log("email....",email);
+      console.log("decoded email...",req.decoded.email);
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const user = await userCollection.findOne(query);
+      let teacher= false;
+      if(user){
+        teacher = user?.role==='teacher'
+      }
+      res.send({teacher});
+    })
+    app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    })
+   
     app.delete('/teachers/:id',verifyToken,verifyAdmin,async(req,res)=>{
       const id = req.params.id;
       const query = {_id:new ObjectId(id)};
@@ -177,12 +178,48 @@ async function run() {
     app.get('/teachers',verifyToken,async(req,res)=>{
        const result = await teacherCollection.find().toArray();
        res.send(result);
+       
     })
     // class related api
     app.post('/classes',verifyToken,async(req,res)=>{
       const newClass = req.body;
+      const result = await classCollection.insertOne(newClass);
+      res.send(result);
+    })
+    app.get('/classes',verifyToken,async(req,res)=>{
       const result = await classCollection.find().toArray();
       res.send(result);
+    })
+    app.patch('/classes/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      const query = {email:email};
+     
+      const updateDoc = {
+        $set:{
+          status:'approved'
+        }
+      }
+      const filter={email:email};
+      const result = await userCollection.updateOne(filter,updateDoc);
+      res.send(result);
+    })
+    // delete class
+    app.delete('/classes/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id:new ObjectId(id)};
+      const result = await classCollection.deleteOne(query);
+      res.send(result);
+    })
+    app.get('/classes/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+
+
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
