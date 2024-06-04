@@ -190,19 +190,41 @@ async function run() {
       const result = await classCollection.find().toArray();
       res.send(result);
     })
-    app.patch('/classes/:email',verifyToken,async(req,res)=>{
-      const email = req.params.email;
-      const query = {email:email};
+    app.get('/class/:id',verifyToken,async(req,res)=>{
+      try{
+        const id = req.params.id;
+        const query = {_id:new ObjectId(id)};
+        const result = await classCollection.findOne(query);
+        res.send(result);
+      }catch(error){
+        console.log(error);
+      }
+    })
+    app.patch('/classes/:id',verifyToken,async(req,res)=>{
+     
+      const id = req.params.id;
+      const filter={_id:new ObjectId(id)};
+     
      
       const updateDoc = {
         $set:{
           status:'approved'
         }
       }
-      const filter={email:email};
-      const result = await userCollection.updateOne(filter,updateDoc);
+     
+      const result = await classCollection.updateOne(filter,updateDoc);
       res.send(result);
     })
+   
+    app.get('/conditionalClass', async (req, res) => {
+      try {
+        const classes = await classCollection.find({ status: 'approved' }).toArray();
+        res.send(classes);
+      } catch (err) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+
     // delete class
     app.delete('/classes/:id',async(req,res)=>{
       const id = req.params.id;
