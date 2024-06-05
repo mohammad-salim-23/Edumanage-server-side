@@ -25,6 +25,7 @@ async function run() {
     const userCollection = client.db("EduManage").collection("users");
     const teacherCollection = client.db("EduManage").collection("teachers");
     const classCollection = client.db("EduManage").collection("class");
+    const paymentCollection = client.db("EduManage").collection("payments");
   //  created middleware
   const verifyToken = (req,res,next)=>{
     console.log("inside verify Token",req.headers);
@@ -186,11 +187,11 @@ async function run() {
       const result = await classCollection.insertOne(newClass);
       res.send(result);
     })
-    app.get('/classes',verifyToken,async(req,res)=>{
+    app.get('/classes',async(req,res)=>{
       const result = await classCollection.find().toArray();
       res.send(result);
     })
-    app.get('/class/:id',verifyToken,async(req,res)=>{
+    app.get('/class/:id',async(req,res)=>{
       try{
         const id = req.params.id;
         const query = {_id:new ObjectId(id)};
@@ -242,6 +243,24 @@ async function run() {
       res.send(result);
 
 
+    })
+    // payment intent
+    app.post('/create-payment-intent',async(req,res)=>{
+      const {price} = req.body;
+      const amount = parseInt(price*100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount:amount,
+        currency:'usd',
+        payment_method_types:['card']
+      });
+      res.send({
+        clientSecret:paymentIntent.client_secret
+      })
+    })
+    app.post('/payments',async(req,res)=>{
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+      res.send(paymentResult);
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
