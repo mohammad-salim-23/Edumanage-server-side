@@ -1,7 +1,9 @@
 const express = require("express");
 const app = express();
 const jwt = require("jsonwebtoken");
+
 require("dotenv").config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 
@@ -201,6 +203,16 @@ async function run() {
         console.log(error);
       }
     })
+    app.get('/payment/:id',async(req,res)=>{
+      try{
+        const id = req.params.id;
+        const query = {_id:new ObjectId(id)};
+        const result = await classCollection.findOne(query);
+        res.send(result);
+      }catch(error){
+        console.log(error);
+      }
+    })
     app.patch('/classes/:id',verifyToken,async(req,res)=>{
      
       const id = req.params.id;
@@ -246,8 +258,11 @@ async function run() {
     })
     // payment intent
     app.post('/create-payment-intent',async(req,res)=>{
-      const {price} = req.body;
-      const amount = parseInt(price*100);
+     const {price} = req.body;
+     
+     const amount = parseInt(price*100);
+
+     
       const paymentIntent = await stripe.paymentIntents.create({
         amount:amount,
         currency:'usd',
@@ -259,8 +274,12 @@ async function run() {
     })
     app.post('/payments',async(req,res)=>{
       const payment = req.body;
+     try{
       const paymentResult = await paymentCollection.insertOne(payment);
-      res.send(paymentResult);
+      res.send({paymentResult});
+     }catch(error){
+      res.status(500).send({ error: 'Failed to store payment details' });
+     }
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
