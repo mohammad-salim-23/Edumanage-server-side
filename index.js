@@ -68,6 +68,7 @@ async function run() {
     // user related api
     app.post('/users',async(req,res)=>{
       const user = req.body;
+      user.status = 'user';
       // insert email id users doesn't exist
       const query = {email:user.email};
       const existingUser = await userCollection.findOne(query);
@@ -152,6 +153,21 @@ async function run() {
       }
       res.send({teacher});
     })
+    app.get('/users/student/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      console.log("email....",email);
+      console.log("decoded email...",req.decoded.email);
+      if(email!==req.decoded?.email){
+        return res.status(403).send({message:'forbidden access one'});
+      }
+      const query = {email:email};
+      const user = await userCollection.findOne(query);
+      let student= false;
+      if(user){
+        student = user?.role==='student'
+      }
+      res.send({student});
+    })
     app.get('/users',verifyToken,verifyAdmin,async(req,res)=>{
       const result = await userCollection.find().toArray();
       res.send(result);
@@ -186,6 +202,7 @@ async function run() {
     // class related api
     app.post('/classes',verifyToken,async(req,res)=>{
       const newClass = req.body;
+      newClass.enrollment=0;
       const result = await classCollection.insertOne(newClass);
       res.send(result);
     })
@@ -257,7 +274,7 @@ async function run() {
 
     })
     // payment intent
-    app.post('/create-payment-intent',async(req,res)=>{
+    app.post('/create-payment-intent',verifyToken,async(req,res)=>{
      const {price} = req.body;
      
      const amount = parseInt(price*100);
@@ -272,14 +289,32 @@ async function run() {
         clientSecret:paymentIntent.client_secret
       })
     })
-    app.post('/payments',async(req,res)=>{
+    
+
+    app.post('/payments/:id',verifyToken,async(req,res)=>{
       const payment = req.body;
-     try{
+      const id = req.params.id;
+      const classQuery = {_id:new ObjectId(id)};
+      const updateClass = await classCollection.findOne(classQuery);
+
+          // Ensure enrollment is a number
+    let currentEnrollment = updateClass.enrollment;
+    if (isNaN(currentEnrollment) || currentEnrollment === undefined) {
+      currentEnrollment = 0;
+    }
+       
+    const updateEnrollment = currentEnrollment + 1;
+      await classCollection.updateOne(classQuery,{
+        $set:{
+          enrollment:updateEnrollment,
+          role:'student'
+        }
+      })
+
       const paymentResult = await paymentCollection.insertOne(payment);
+
       res.send({paymentResult});
-     }catch(error){
-      res.status(500).send({ error: 'Failed to store payment details' });
-     }
+     
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
