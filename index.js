@@ -226,6 +226,12 @@ async function run() {
         console.log(error);
       }
     })
+    app.delete('/class/:id',verifyToken,async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id:new ObjectId(id)};
+      const result = await classCollection.deleteOne(query);
+      res.send(result);
+    })
     app.get('/payment/:id',async(req,res)=>{
       try{
         const id = req.params.id;
