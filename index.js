@@ -210,6 +210,12 @@ async function run() {
       const result = await classCollection.find().toArray();
       res.send(result);
     })
+    app.get('/classes/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      const query = {email:email};
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    })
     app.get('/class/:id',async(req,res)=>{
       try{
         const id = req.params.id;
@@ -307,12 +313,18 @@ async function run() {
       await classCollection.updateOne(classQuery,{
         $set:{
           enrollment:updateEnrollment,
-          role:'student'
+         
         }
       })
-
       const paymentResult = await paymentCollection.insertOne(payment);
-
+      if(paymentResult.insertedId){
+        const userQuery = { email: payment.email };
+        const updateUserResult = await userCollection.updateOne(userQuery,{
+          $set:{
+            role:'student',
+          }
+        })
+      }
       res.send({paymentResult});
      
     })
