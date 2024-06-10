@@ -356,6 +356,16 @@ async function run() {
       res.send({paymentResult});
      
     })
+    app.get('/payments/:email',verifyToken,async(req,res)=>{
+      const email = req.params.email;
+      const query = {email:email};
+      const payments = await paymentCollection.find(query).toArray();
+
+      const classIds = payments.map(payment=>new ObjectId(payment.classId));
+      const classes = await classCollection.find({_id:{$in:classIds}}).toArray();
+      res.send(classes);
+
+    })
     // assignment related api
     app.post('/assignments',verifyToken,async(req,res)=>{
       const newAssignment = req.body;
