@@ -28,6 +28,7 @@ async function run() {
     const teacherCollection = client.db("EduManage").collection("teachers");
     const classCollection = client.db("EduManage").collection("class");
     const paymentCollection = client.db("EduManage").collection("payments");
+    const assignmentCollection = client.db("EduManage").collection("assignments");
   //  created middleware
   const verifyToken = (req,res,next)=>{
     console.log("inside verify Token",req.headers);
@@ -242,6 +243,26 @@ async function run() {
         console.log(error);
       }
     })
+    app.put('/class/:id',verifyToken,async(req,res)=>{
+       const id = req.params.id; 
+       const filter = {_id:new ObjectId (id)};
+       const options = {upsert:true};
+       const updateClass = req.body;
+       const Class = {
+        $set:{
+          title:updateClass.title,
+          price:updateClass.price,
+          description:updateClass.description,
+        
+          experience:updateClass.experience,
+          category:updateClass.category,
+
+
+        }
+       };
+       const result = await classCollection.updateOne(filter,Class,options);
+       res.send(result);
+    })
     app.patch('/classes/:id',verifyToken,async(req,res)=>{
      
       const id = req.params.id;
@@ -285,6 +306,7 @@ async function run() {
 
 
     })
+   
     // payment intent
     app.post('/create-payment-intent',verifyToken,async(req,res)=>{
      const {price} = req.body;
@@ -325,14 +347,27 @@ async function run() {
       const paymentResult = await paymentCollection.insertOne(payment);
       if(paymentResult.insertedId){
         const userQuery = { email: payment.email };
-        const updateUserResult = await userCollection.updateOne(userQuery,{
-          $set:{
-            role:'student',
-          }
-        })
+        // const updateUserResult = await userCollection.updateOne(userQuery,{
+        //   $set:{
+        //     role:'student',
+        //   }
+        // })
       }
       res.send({paymentResult});
      
+    })
+    // assignment related api
+    app.post('/assignments',verifyToken,async(req,res)=>{
+      const newAssignment = req.body;
+      newAssignment.submission=0;
+      const result = await assignmentCollection.insertOne(newAssignment);
+      res.send(result);
+    })
+    app.get("/assignments/:id",verifyToken,async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id:new ObjectId(id)};
+      const result = await assignmentCollection.findOne(query);
+      res.send(result);
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
