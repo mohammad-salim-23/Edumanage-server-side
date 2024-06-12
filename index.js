@@ -29,6 +29,7 @@ async function run() {
     const classCollection = client.db("EduManage").collection("class");
     const paymentCollection = client.db("EduManage").collection("payments");
     const assignmentCollection = client.db("EduManage").collection("assignments");
+    const FeedbackCollection = client.db("EduManage").collection("feedbacks");
   //  created middleware
   const verifyToken = (req,res,next)=>{
     console.log("inside verify Token",req.headers);
@@ -375,9 +376,41 @@ async function run() {
     })
     app.get("/assignments/:id",verifyToken,async(req,res)=>{
       const id = req.params.id;
-      const query = {_id:new ObjectId(id)};
-      const result = await assignmentCollection.findOne(query);
+      const query = {classId:id};
+      const result = await assignmentCollection.find(query).toArray();
       res.send(result);
+    })
+    
+    app.put('/assignments/submit/:id', verifyToken, async (req, res) => {
+      const id = req.params.id;
+      try {
+        // Increment the submission count for the assignment
+        const result = await assignmentCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $inc: { submission: 1 } }
+        );
+    
+        if (result.modifiedCount === 1) {
+          res.send({ message: 'Assignment submitted successfully' });
+        } else {
+          res.status(404).send({ error: 'Assignment not found' });
+        }
+      } catch (error) {
+        res.status(500).send({ error: 'Failed to submit assignment' });
+      }
+    });
+    // evaluation related api
+    app.post("/evaluations",verifyToken,async(req,res)=>{
+      const newFeedback = req.body;
+      const result = await FeedbackCollection.insertOne(newFeedback);
+      res.send(result);
+    })
+    app.get('/with-feedback',async(req,res)=>{
+      
+     console.log("hello");
+       const result = await FeedbackCollection.find().toArray();
+       res.send(result);
+      
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
