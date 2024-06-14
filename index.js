@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const userCollection = client.db("EduManage").collection("users");
     const teacherCollection = client.db("EduManage").collection("teachers");
     const classCollection = client.db("EduManage").collection("class");
@@ -79,6 +79,10 @@ async function run() {
         return res.send({message:'user already exists',insertedId:null})
       }
       const result = userCollection.insertOne(user);
+      res.send(result);
+    })
+    app.get('/users',async(req,res)=>{
+      const result  = await userCollection.find().toArray();
       res.send(result);
     })
     app.get('/users/:email',verifyToken,async(req,res)=>{
